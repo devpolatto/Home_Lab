@@ -1,0 +1,50 @@
+---
+version: '3'
+
+x-logging:
+  project_name: ${PROJECT_NAME}
+
+networks:
+  default:
+    name: monitoring
+    external: false
+
+services:
+
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    container_name: prometheus
+    volumes:
+      - ${PROMETHEUS_ENDPOINT_FILE}:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_HOST_PORT}:9090"
+    command: "--config.file=/etc/prometheus/prometheus.yaml"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    ports:
+      - "${GRAFANA_HOST_PORT}:3000"
+    volumes:
+      - "grafana-data:/var/lib/grafana"
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: ${PROMETHEUS_SERVER_NAME}
+    command:
+      - '--path.rootfs=/host'
+    ports:
+      - "9100:9100"
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+volumes:
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
