@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: ${PROMETHEUS_SERVER_NAME}
+    static_configs:
+      - targets: ["${PROMETHEUS_SERVER_NAME}:9100"]
+
+  - job_name: ${FGT_001}
+    scrape_interval: 5s
+    metrics_path: /probe
+    static_configs:
+      - targets:
+          - "https://${FGT_001_HOST_001}:${FGT_001_PORT}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+        # Drop the https:// and port (if specified) for the 'instance=' label
+        regex: '(?:.+)(?::\/\/)([^:]*).*'
+      - target_label: __address__
+        replacement: "fortigate-prometheus_fortigate_exporter-1:9710"
