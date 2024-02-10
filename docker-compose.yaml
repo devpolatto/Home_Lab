@@ -1,0 +1,101 @@
+---
+version: '3'
+
+x-logging:
+  project_name: ${PROJECT_NAME}
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    labels: 
+      - traefik.enable=true
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.routers.grafana.rule=Host(`portainer.${HOME_LAB_DOMAIN}`)
+    ports:
+      - "8000:8000"
+      - "${PORTAINER_PORT}:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+  prometheus:
+    image: prom/prometheus:v2.37.9
+    container_name: prometheus
+    labels: 
+      - traefik.enable=true
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.routers.grafana.rule=Host(`prometheus.${HOME_LAB_DOMAIN}`)
+    volumes:
+      - ${PROMETHEUS_CONFIG_FILE}:/etc/prometheus/prometheus.yaml
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_HOST_PORT}:9090"
+    command: "--config.file=/etc/prometheus/prometheus.yaml"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    labels: 
+      - traefik.enable=true
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.routers.grafana.rule=Host(`grafana.${HOME_LAB_DOMAIN}`)
+    ports:
+      - "${GRAFANA_HOST_PORT}:3000"
+    volumes:
+      - "grafana-data:/var/lib/grafana"
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: prometheus-exporter
+    command:
+      - '--path.rootfs=/host'
+    ports:
+      - "9100:9100"
+    pid: host
+    restart: unless-stopped
+    volumes:
+      - '/:/host:ro,rslave'
+
+  traefik:
+    depends_on:
+      - portainer
+      - prometheus
+      - grafana
+    container_name: traefik
+    image: traefik:2.10.5
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - /etc/traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+      - traefik-ssl-certs:/ssl-certs
+      # - ./config/conf/:/etc/traefik/conf/
+      # - ./config/certs/:/etc/traefik/certs/
+    # environment:
+    #   - CF_DNS_API_TOKEN=$CF_DNS_API_TOKEN
+    restart: unless-stopped
+
+networks:
+  default:
+    name: proxy
+    external: false
+
+volumes:
+  portainer_data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  traefik-ssl-certs:
+    driver: local
+
+  
+  

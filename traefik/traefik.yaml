@@ -1,0 +1,37 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: DEBUG
+
+api:
+  dashboard: true
+  insecure: true
+  debug: false
+
+entryPoints:
+  web:
+    address: ":80"
+  # websecure:
+  #   address: ":443"
+  #   # Uncomment the following lines if you want HTTP to HTTPS redirection
+  #   # http:
+  #   #   redirections:
+  #   #     entryPoint:
+  #   #       to: websecure
+  #   #       scheme: https
+
+serversTransport:
+  insecureSkipVerify: true
+
+providers:
+  docker:
+    exposedByDefault: false
+    endpoint: "unix:///var/run/docker.sock"
+    watch: true
+    swarmMode: false
+
+  file:
+    directory: "/etc/traefik/"
+    watch: true

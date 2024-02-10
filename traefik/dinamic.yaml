@@ -1,0 +1,41 @@
+http:
+  routers:
+    portainer-router:
+      entryPoints:
+        - web
+      rule: "Host(`portainer.midgard.local`)"
+      service: "portainer-service"
+
+    prometheus-router:
+      entryPoints:
+        - web
+      rule: "Host(`prometheus.midgard.local`)"
+      service: "prometheus-service"
+
+    grafana-router:
+      entryPoints:
+        - web
+      rule: "Host(`grafana.midgard.local`)"
+      service: "grafana-service"
+
+  services:
+    portainer-service:
+      loadBalancer:
+        servers:
+          - url: "http://portainer:9443"
+
+    prometheus-service:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    grafana-service:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+dns:
+  resolvers:
+    valhalla:
+      address:
+        - "192.168.40.1"
